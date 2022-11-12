@@ -9,7 +9,7 @@
 #define LEGAL 0
 #define PAGE_PER_INTERRUPT 2
 #define PAGE_SIZE 512
-#define CONSTANT_NAME_MAX_LEN 30
+#define CONSTANT_NAME_MAX_LEN 300
 
 extern int linecount;
 extern int out_linecount;

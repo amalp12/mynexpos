@@ -71,8 +71,8 @@ void runCommand(char command[])
         printf(" load --exec <pathname> \n\t Loads an executable file to XFS disk \n");
         printf(" load --data <pathname> \n\t Loads a data file to XFS disk \n");
         printf(" load --init <pathname> \n\t Loads INIT code to XFS disk \n");
-        printf(" load --os=primary <pathname> \n\t Loads OS startup code for the primary core to XFS disk \n");
-        printf(" load --os=secondary <pathname> \n\t Loads OS startup code for the secondary core to XFS disk \n");
+        printf(" load --os=primary=primary <pathname> \n\t Loads OS startup code for the primary core to XFS disk \n");
+        printf(" load --os=primary=secondary <pathname> \n\t Loads OS startup code for the secondary core to XFS disk \n");
         printf(" load --idle <pathname> \n\t Loads Idle code to XFS disk \n");
         printf(" load --shell <pathname> \n\t Loads Shell code to XFS disk \n");
         printf(" load --library <pathname> \n\t Loads Library code to XFS disk \n");
@@ -181,7 +181,7 @@ void runCommand(char command[])
 
             loadDataToDisk(fileName);
         }
-        else if (strcmp(arg1, "--os") == 0)
+        else if (strcmp(arg1, "--os=primary") == 0)
         {
             if (strcmp(intType, "primary") == 0)
                 loadOSCode(fileName);
@@ -189,7 +189,7 @@ void runCommand(char command[])
                 loadOS2Code(fileName);
             else
             {
-                printf("Invalid argument for \"--os=\".\n");
+                printf("Invalid argument for \"--os=primary=\".\n");
                 return;
             }
         }
@@ -442,7 +442,7 @@ char *xfs_cli_opt_gen(const char *text, int state)
 {
     static int index, len;
     const int opt_len = 10;
-    const char *options[10] = {"--int=", "--os=", "--exec", "--data", "--init", "--idle", "--shell", "--library", "--exhandler", "--module"};
+    const char *options[10] = {"--int=", "--os=primary=", "--exec", "--data", "--init", "--idle", "--shell", "--library", "--exhandler", "--module"};
 
     if (state == 0)
     {
@@ -454,7 +454,7 @@ char *xfs_cli_opt_gen(const char *text, int state)
     {
         if (!strncmp(text, options[index], len))
         {
-            // Prevent readline from appending a space after possible --int= and --os=
+            // Prevent readline from appending a space after possible --int= and --os=primary=
             if (index >= 0 && index < 2)
                 rl_completion_append_character = '\0';
             return strdup(options[index++]);
