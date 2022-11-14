@@ -2,10 +2,10 @@
 
 
 // Store the SP value in the UPTR field in the process table entry of the currently running process.
-[PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 13] = SP;
+[PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE + 5*CORE + 1] + 13] = SP;
 
 // Initialize SP (kernel stack pointer) to (user area page number)*512 -1. //Switch to the kernel stack.
-SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 11] * 512 - 1;
+SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE + 5*CORE + 1] + 11] * 512 - 1;
 backup;
 
 alias reqPID R0;
@@ -18,17 +18,29 @@ reqProcessTableEntry = PROCESS_TABLE + 16 * reqPID;
 
 // next release the terminal 
 multipush(R0,R1);
-R1 = 9;
-R2 = reqPID; // The current process did not acquire the terminal. The process with reqPID as PID is holding the terminal.
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R0,R1);
 
+multipush(R0,R1);
+
+R1 = RELEASE_TERMINAL;
+R2 = reqPID; // The current process did not acquire the terminal. The process with reqPID as PID is holding the terminal.
 call RESOURCE_MANAGER;
 
+multipop(R0,R1);
+
+multipush(R0,R1);
 // Ignore the return value and restore the registers pushed before.
+
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
 
 multipop(R0,R1);
 
 
 restore;
 // Change SP to UPTR field from the process table entry of the currently running process and return to the user mode. //Switch back to us er stack
-SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE+1] + 13];
+SP = [PROCESS_TABLE + 16 * [SYSTEM_STATUS_TABLE + 5*CORE + 1] + 13];
 ireturn;

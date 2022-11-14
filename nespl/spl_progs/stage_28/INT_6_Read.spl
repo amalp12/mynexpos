@@ -1,9 +1,6 @@
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
 
 alias processTableEntryAddress R1;
-processTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16);
+processTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16);
 
 // Set the MODE FLAG field in the process table to the system call number which is 6 for write system call.
 [processTableEntryAddress + 9] = 6;
@@ -20,7 +17,11 @@ SP = [processTableEntryAddress+ 11] * 512 - 1;
 
 PTBR = [processTableEntryAddress+ 14];
 
-
+multipush(R1,R2);
+// call AQUIRE KERNEL LOCK
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+multipush(R1,R2);
 
 alias fileDescriptor R3;
 alias returnAddress R4;
@@ -39,7 +40,7 @@ if(fileDescriptor == -1) then
 
     multipush(R1, R2, R3, R4, R5);
     R1 = TERMINAL_READ;
-    R2 = [SYSTEM_STATUS_TABLE+1];
+    R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
     R3 = word;
     call DEVICE_MANAGER; // (There is no return value for terminal Read.)
     multipop(R1, R2, R3, R4, R5);
@@ -50,15 +51,19 @@ else
     //  If file descriptor is invalid, return -1.     File descriptor value should be within the range 0 to 7 (both included). 
     if(fileDescriptor<0 || fileDescriptor>7) then
         [returnAddress] = -1;
+
+        multipush(R1);
+        // calling RELEASE KERNEL LOCK
+        R1 = RELEASE_LOCK;
+        R2 = KERN_LOCK;
+        call ACCESS_CONTROL;
+        multipop(R1);
+
         // setting the mode flag back to zero
         [processTableEntryAddress + 9] = 0;
         // Change SP back to user stack and return to the user mode.
         SP = [processTableEntryAddress + 13] ;
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
 
         
         ireturn;
@@ -73,15 +78,18 @@ else
     // No file is open with this file descriptor. 
     if( [perProcessResouceTableEntry] != FILE) then
         [returnAddress] = -1;
+    
+        multipush(R1);
+        // calling RELEASE KERNEL LOCK
+        R1 = RELEASE_LOCK;
+        R2 = KERN_LOCK;
+        call ACCESS_CONTROL;
+        multipop(R1);
         // setting the mode flag back to zero
         [processTableEntryAddress + 9] = 0;
         // Change SP back to user stack and return to the user mode.
         SP = [processTableEntryAddress + 13] ;
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
         ireturn;
     endif;
 
@@ -97,7 +105,7 @@ else
     multipush(R1,R2,R3,R4,R5,R6,R7);
     R1 = ACQUIRE_INODE;
     R2 = inodeIndexOfFile;
-    R3 = [SYSTEM_STATUS_TABLE+1];
+    R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
     call RESOURCE_MANAGER;
     multipop(R1,R2,R3,R4,R5,R6,R7);
 
@@ -105,15 +113,19 @@ else
     // If acquiring the inode fails, return -1.
     if(R0 == -1) then
         [returnAddress] = -1;
+        
+        multipush(R1);
+        // calling RELEASE KERNEL LOCK
+        R1 = RELEASE_LOCK;
+        R2 = KERN_LOCK;
+        call ACCESS_CONTROL;
+        multipop(R1);
+
         // setting the mode flag back to zero
         [processTableEntryAddress + 9] = 0;
         // Change SP back to user stack and return to the user mode.
         SP = [processTableEntryAddress + 13] ;
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
         ireturn;
     endif;
 
@@ -132,19 +144,23 @@ else
             multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9);
             R1 = RELEASE_INODE;
             R2 = inodeIndexOfFile;
-            R3 = [SYSTEM_STATUS_TABLE+1];
+            R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
             call RESOURCE_MANAGER;
             multipop(R1,R2,R3,R4,R5,R6,R7,R8,R9);
 
             [returnAddress] = -2;
-            // setting the mode flag back to zero
-            [processTableEntryAddress + 9] = 0;
-            // Change SP back to user stack and return to the user mode.
-            SP = [processTableEntryAddress + 13] ;
+        
+            multipush(R1);
             // calling RELEASE KERNEL LOCK
             R1 = RELEASE_LOCK;
             R2 = KERN_LOCK;
             call ACCESS_CONTROL;
+            multipop(R1);
+            
+            // setting the mode flag back to zero
+            [processTableEntryAddress + 9] = 0;
+            // Change SP back to user stack and return to the user mode.
+            SP = [processTableEntryAddress + 13] ;
             ireturn;
 
         endif;
@@ -167,20 +183,24 @@ else
 			// Arguements are Inodeindex, PID	
             R1 = RELEASE_INODE;
             R2 = inodeIndexOfFile;
-            R3 = [SYSTEM_STATUS_TABLE+1];
+            R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
             call RESOURCE_MANAGER;
             multipop(R1,R2,R3,R4,R5,R6,R7,R8,R9);
 
             [returnAddress] = -2;
+
+            multipush(R1);
+            // calling RELEASE KERNEL LOCK
+            R1 = RELEASE_LOCK;
+            R2 = KERN_LOCK;
+            call ACCESS_CONTROL;
+            multipop(R1);
+
             // setting the mode flag back to zero
             [processTableEntryAddress + 9] = 0;
             // Change SP back to user stack and return to the user mode.
             SP = [processTableEntryAddress + 13] ;
 
-            // calling RELEASE KERNEL LOCK
-            R1 = RELEASE_LOCK;
-            R2 = KERN_LOCK;
-            call ACCESS_CONTROL;
             ireturn;
 
         endif;
@@ -214,7 +234,7 @@ else
     multipush(R1,R2,R3,R4,R5,R6,R7,R8);
     R1 = RELEASE_INODE;
     R2 = inodeIndexOfFile;
-    R3 = [SYSTEM_STATUS_TABLE+1];
+    R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
     call RESOURCE_MANAGER;
     multipop(R1,R2,R3,R4,R5,R6,R7,R8);
 
@@ -227,15 +247,18 @@ endif;
 // Return 0.
 [returnAddress] = 0;
 
+multipush(R1);
+// calling RELEASE KERNEL LOCK
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R1);
+
 // setting the mode flag back to zero
 [processTableEntryAddress + 9] = 0;
 // Change SP back to user stack and return to the user mode.
 SP = [processTableEntryAddress + 13] ;
 
-// calling RELEASE KERNEL LOCK
-R1 = RELEASE_LOCK;
-R2 = KERN_LOCK;
-call ACCESS_CONTROL;
 
 ireturn;
 

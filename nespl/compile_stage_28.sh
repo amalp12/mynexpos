@@ -39,15 +39,15 @@ echo "INT 15 Shutdown Compiled"
 echo "INT 16 Compiled"
 ./spl ./spl_progs/stage_28/INT_17_Login.spl
 echo "INT 17 Login Compiled"
-./spl ./spl_progs/stage_24/MOD_0_Resource_Manager.spl
+./spl ./spl_progs/stage_28/MOD_0_Resource_Manager.spl
 echo "Module 0 Resource Manager Compiled"
 ./spl ./spl_progs/stage_28/MOD_1_Process_Manager.spl
 echo "Module 1 Process Manager Compiled"
-./spl ./spl_progs/stage_27/MOD_2_Memory_Manager.spl
+./spl ./spl_progs/stage_28/MOD_2_Memory_Manager.spl
 echo "Module 2 Memory Manager Compiled"
-./spl ./spl_progs/stage_25/MOD_3_File_Manager.spl
+./spl ./spl_progs/stage_28/MOD_3_File_Manager.spl
 echo "Module 3 File Manager Compiled"
-./spl ./spl_progs/stage_23/MOD_4_Device_Manager.spl
+./spl ./spl_progs/stage_28/MOD_4_Device_Manager.spl
 echo "Module 4 Device Manager Compiled"
 ./spl ./spl_progs/stage_28/MOD_5_Scheduler.spl
 echo "Scheduler Compiled"

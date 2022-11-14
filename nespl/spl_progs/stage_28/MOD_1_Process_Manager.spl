@@ -181,7 +181,7 @@ if(functionNum == GET_PCB_ENTRY) then // 1
 
     processID =-1;
     count = SHELL_PROCESS+1;
-    while(count < MAX_PROC_NUM-1)do
+    while(count < IDLE2_PROCESS)do
         processTableEntryAddress = PROCESS_TABLE + count * 16;
         if([processTableEntryAddress+4] == TERMINATED) then
             [processTableEntryAddress + 1] = count;
@@ -212,7 +212,7 @@ if( functionNum == KILL_ALL) then
         // Arguements are Inodeindex, PID	
         R1 = ACQUIRE_INODE;
         R2 = iter;
-        R3 = [SYSTEM_STATUS_TABLE+1];
+        R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
         call RESOURCE_MANAGER;
         multipop(R1,R2,R3);
 
@@ -260,7 +260,7 @@ if( functionNum == KILL_ALL) then
         // Arguements are Inodeindex, PID	
         R1 = RELEASE_INODE;
         R2 = iter;
-        R3 = [SYSTEM_STATUS_TABLE+1];
+        R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
         call RESOURCE_MANAGER;
         multipop(R1,R2,R3);
 

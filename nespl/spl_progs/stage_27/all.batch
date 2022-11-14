@@ -1,4 +1,4 @@
-load --os=primary=primary ../nespl/spl_progs/stage_27/OS_Startup.xsm
+load --os=primary ../nespl/spl_progs/stage_27/OS_Startup.xsm
 load --module 0 ../nespl/spl_progs/stage_24/MOD_0_Resource_Manager.xsm
 load --module 1 ../nespl/spl_progs/stage_27/MOD_1_Process_Manager.xsm
 load --module 2 ../nespl/spl_progs/stage_27/MOD_2_Memory_Manager.xsm

@@ -1,10 +1,7 @@
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
 
 // Set the MODE FLAG in the process table to system call number of Fork.
 alias parentProcessTableEntryAddress R4;
-parentProcessTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+1]*16);
+parentProcessTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16);
 
 [parentProcessTableEntryAddress + 9] = 8;
 
@@ -17,11 +14,18 @@ SP = [parentProcessTableEntryAddress + 11] * 512  - 1 ;
 PTBR = [parentProcessTableEntryAddress + 14];
 PTLR = [parentProcessTableEntryAddress + 15];
 
+
+
 // Allocate memory and set the Process Table
 // Find a free Process Table entry by invoking the get_pcb_entry() function in Process Manager module. 
 // If no free entry is found, return -1.
 
 multipush(R4);
+// call AQUIRE KERNEL LOCK
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+
+// call GET PCB ENTRY
 R1 = GET_PCB_ENTRY;
 call PROCESS_MANAGER;
 multipop(R4);
@@ -34,15 +38,18 @@ if(R0 == -1)then
     alias userSP_MinusOne R1;
     userSP_MinusOne = [parentProcessTableEntryAddress + 13]-1;
     [[PTBR + 2*((userSP_MinusOne)/512)] * 512 + ((userSP_MinusOne)%512)] = -1;
+    // calling RELEASE KERNEL LOCK
+
+    multipush(R4);
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R4);
 
     // Set the user stack pointer to the value stored in the UPTR field of the process table entry of the current process.
     SP = [parentProcessTableEntryAddress + 13];
     // Return to user mode.
 
-    // calling RELEASE KERNEL LOCK
-    R1 = RELEASE_LOCK;
-    R2 = KERN_LOCK;
-    call ACCESS_CONTROL;
     ireturn;
 endif;
 
@@ -113,7 +120,7 @@ endwhile;
 [childProcessTableEntryAddress + 13] = [parentProcessTableEntryAddress + 13]; // USER STACK POINTER
 
 // Set the PPID field of child process to the current PID. Also set User Area Page Number to the new UA Page, MODE, TICK and Kernel Stack Pointer to 0. 
-[childProcessTableEntryAddress+ 2] = [SYSTEM_STATUS_TABLE + 1]; // PPID
+[childProcessTableEntryAddress+ 2] = [SYSTEM_STATUS_TABLE + 5*CORE + 1]; // PPID
 [childProcessTableEntryAddress+ 0] = 0; // TICK
 [childProcessTableEntryAddress+ 9] = 0; // MODE FLAG
 [childProcessTableEntryAddress+ 12] = 0; // KERNEL STACK POINTER
@@ -165,7 +172,7 @@ endwhile;
 alias parentDiskMapTableEntry R6;
 alias childDiskMapTableEntry R7;
 count=0; // R5
-parentDiskMapTableEntry = DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE+1]*10 ;
+parentDiskMapTableEntry = DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*10 ;
 childDiskMapTableEntry = DISK_MAP_TABLE + childPID*10 ;
 while(count<10) do
     
@@ -267,6 +274,12 @@ alias parentSP R5;
 parentSP = [parentProcessTableEntryAddress+13];
 [[PTBR + 2 * ((parentSP-1)/ 512)] * 512 + ((parentSP-1) % 512)] = childPID;
 
+multipush(R4);
+// calling RELEASE KERNEL LOCK
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R4);
 
 // Set the MODE_FLAG in the process table entry of the parent process to 0.
 [parentProcessTableEntryAddress + 9] = 0;
@@ -275,8 +288,4 @@ parentSP = [parentProcessTableEntryAddress+13];
 // Restore SP to User SP and return to the parent process.
 SP = [parentProcessTableEntryAddress + 13];
 
-// calling RELEASE KERNEL LOCK
-R1 = RELEASE_LOCK;
-R2 = KERN_LOCK;
-call ACCESS_CONTROL;
 ireturn;

@@ -1,18 +1,23 @@
 // each entry in process table contains 16 words so we multiply by 16 
 // the 13th word had the UTPR
 // this code does UTPR = SP
-[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 13] = SP;
 // UArea Page number is in PROCESS_TABLE +  PID * 16 since there are 16 words in each entry
 // Setting SP to UArea Page number * 512 - 1 (kernel stack)
-SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 11] * 512 - 1;
 backup;
+
+// Aquire Kernel
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+
 // -- Pager Module Code --
 
 // If swapping is initiated, (Check SYSTEM_STATUS_TABLE PAGING_STATUS == 1)
 if([SYSTEM_STATUS_TABLE+5] != 0 && CORE == PRIMARY_CORE) then
 
     // if the current process is the Swapper Daemon and Paging Status is SWAP_OUT,
-    if([SYSTEM_STATUS_TABLE+1] == SWAPPER_DAEMON  ) then
+    if([SYSTEM_STATUS_TABLE + 5*CORE + 1] == SWAPPER_DAEMON  ) then
 
         // call AQUIRE KERNEL LOCK
         R1 = ACQUIRE_KERN_LOCK;
@@ -22,14 +27,14 @@ if([SYSTEM_STATUS_TABLE+5] != 0 && CORE == PRIMARY_CORE) then
             // Call the swap_out() function in the Pager Module.
             // Arguments are PID
             R1 = SWAP_OUT;
-            R2 = [SYSTEM_STATUS_TABLE+1];
+            R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
             call PAGER_MODULE;
         else
 
             // Call the swap_in() function in the Pager Module.
             // Arguments are PID
             R1 = SWAP_IN;
-            R2 = [SYSTEM_STATUS_TABLE+1];
+            R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
             call PAGER_MODULE;
         endif;
 
@@ -103,7 +108,7 @@ endif;
 
 // The Process table entry of the current process can be computed as PROCESS_TABLE + currentPID*16. Save the KPTR, PTBR and PTLR values to the Process Table entry of the current process. Set the state of the process as READY.
 alias processTableEntryAddress R1;
-processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16;
 
 // changing status of the current program to ready
 [processTableEntryAddress + 4] = READY;
@@ -119,6 +124,10 @@ while(iter<MAX_PROC_NUM-1) do
     iter = iter +1;
 endwhile;
 
+// Calling Release Lock on Kernel
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
 
 // Scheduling algorithm round robin
 call SCHEDULER;
@@ -127,6 +136,6 @@ call SCHEDULER;
 restore;
 
 // this code does SP = UTPR;
-SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
-[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9]=0; // MODE
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 13];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 9]=0; // MODE
 ireturn;

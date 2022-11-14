@@ -1,12 +1,12 @@
 load --os=primary ../nespl/spl_progs/stage_28/OS_Startup.xsm
 load --os=secondary ../nespl/spl_progs/stage_28/OS_Startup2.xsm
-load --module 0 ../nespl/spl_progs/stage_24/MOD_0_Resource_Manager.xsm
-load --module 1 ../nespl/spl_progs/stage_27/MOD_1_Process_Manager.xsm
-load --module 2 ../nespl/spl_progs/stage_27/MOD_2_Memory_Manager.xsm
-load --module 3 ../nespl/spl_progs/stage_25/MOD_3_File_Manager.xsm
-load --module 4 ../nespl/spl_progs/stage_23/MOD_4_Device_Manager.xsm
-load --module 5 ../nespl/spl_progs/stage_27/MOD_5_Scheduler.xsm
-load --module 6 ../nespl/spl_progs/stage_27/MOD_6_Pager.xsm
+load --module 0 ../nespl/spl_progs/stage_28/MOD_0_Resource_Manager.xsm
+load --module 1 ../nespl/spl_progs/stage_28/MOD_1_Process_Manager.xsm
+load --module 2 ../nespl/spl_progs/stage_28/MOD_2_Memory_Manager.xsm
+load --module 3 ../nespl/spl_progs/stage_28/MOD_3_File_Manager.xsm
+load --module 4 ../nespl/spl_progs/stage_28/MOD_4_Device_Manager.xsm
+load --module 5 ../nespl/spl_progs/stage_28/MOD_5_Scheduler.xsm
+load --module 6 ../nespl/spl_progs/stage_28/MOD_6_Pager.xsm
 load --module 7 ../nespl/spl_progs/stage_27/boot_module_s27.xsm
 load --module 8 ../nespl/spl_progs/stage_28/MOD_8_Access_Control.xsm
 load --exhandler ../nespl/spl_progs/stage_28/exception_handler.xsm

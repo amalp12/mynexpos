@@ -1,6 +1,3 @@
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
 
 
 // Arguements are User name, Password
@@ -11,13 +8,19 @@ alias processTableEntryAddress R3;
 alias returnAddress R4;
 alias systemCallNum R5;
 
-processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16;
 // Save the user stack pointer in the process table
 [processTableEntryAddress + 13]= SP;
 
 // switch to the kernel stack
 SP = [processTableEntryAddress + 11] * 512  - 1 ;
 PTBR = [processTableEntryAddress + 14] ;
+
+// call AQUIRE KERNEL LOCK
+multipush(R1,R2,R3);
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R1,R2,R3);
 
 userSP = [processTableEntryAddress + 13];
 
@@ -41,17 +44,11 @@ if(systemCallNum == 22) then// Newusr
     password  = [[PTBR + 2*((userSP-3)/512)] * 512 + ((userSP-3)%512)] ;
 
     // If the current user is not root (userId = 1), or if the current process is not the shell (PID=2), return -2.
-    if([SYSTEM_STATUS_TABLE] !=  1 || [SYSTEM_STATUS_TABLE+1] != 2)then
+    if([SYSTEM_STATUS_TABLE] !=  1 || [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2)then
         [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
 
@@ -63,15 +60,9 @@ if(systemCallNum == 22) then// Newusr
     while(iter < MAX_USER_NUM) do
         if([USER_TABLE + iter*2] == userName) then
             [returnAddress] = -1;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
 
-            // calling RELEASE KERNEL LOCK
-            R1 = RELEASE_LOCK;
-            R2 = KERN_LOCK;
-            call ACCESS_CONTROL;
-            ireturn;
+            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
         endif;
         
         // Find a free entry in the User Table. 
@@ -86,15 +77,9 @@ if(systemCallNum == 22) then// Newusr
     // If no free entry is found in the user table, return -3.
     if(userTableEntryAddress == -1)then
         [returnAddress] = -3;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // Find the encrypted password by applying the ENCRYPT instruction on the input password.
@@ -114,31 +99,19 @@ if(systemCallNum == 23)then // Remusr
     // Arguements are User name
 
     // If the current user is not root (userId = 1), or if the current process is not the shell (PID=2), return -2.
-    if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE+1] != 2) then
+    if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2) then
         [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // If the user to be removed is the "root" or "kernel" return -2.
     if(userName == "root" || userName == "kernel") then
         [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // Loop through the User Table and find the entry curresponding to the user.
@@ -158,15 +131,9 @@ if(systemCallNum == 23)then // Remusr
     // If the entry is not found, return -1.
     if(userTableEntryAddress == -1) then
         [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // Loop through the Root File and exit returning -3 if there are files of the user present on disk.
@@ -176,15 +143,9 @@ if(systemCallNum == 23)then // Remusr
 
         if([ROOT_FILE+iter*8+3] == userName) then
             [returnAddress] = -3;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
 
-            // calling RELEASE KERNEL LOCK
-            R1 = RELEASE_LOCK;
-            R2 = KERN_LOCK;
-            call ACCESS_CONTROL;
-            ireturn;
+            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
         endif;
 
         iter = iter+1;
@@ -207,17 +168,11 @@ if(systemCallNum == 24) then// Setpwd
 
 
     // if the current process is not the shell (PID=2), return -1.
-    if( [SYSTEM_STATUS_TABLE+1] != 2)then
+    if( [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2)then
         [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // Loop through the User Table and finds the entry curresponding to the user name.
@@ -240,15 +195,9 @@ if(systemCallNum == 24) then// Setpwd
     // If entry is not found, return -2.
     if( userId == -1)then
         [returnAddress] = -2;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // If (userid of the process is not equal to the userid of the user) 
@@ -256,15 +205,9 @@ if(systemCallNum == 24) then// Setpwd
         //  If (the current user is not root) return -1
         if([SYSTEM_STATUS_TABLE] != 1) then
             [returnAddress] = -1;
-            // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
 
-            // calling RELEASE KERNEL LOCK
-            R1 = RELEASE_LOCK;
-            R2 = KERN_LOCK;
-            call ACCESS_CONTROL;
-            ireturn;
+            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
         endif;
 
     endif;
@@ -289,15 +232,9 @@ if(systemCallNum == 25) then// Getuname
     // If (UserID < 0 or UserID > 15) Return -1
     if(userId < 0 || userId >15) then
         [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
+        
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
     endif;
 
 
@@ -307,15 +244,9 @@ if(systemCallNum == 25) then// Getuname
     // If the user table entry curresponding to the userid is invalid, return -1.
     if([userTableEntryAddress] == -1) then
         [returnAddress] = -1;
-        // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
-        [processTableEntryAddress + 9] = 0;
-        SP = [processTableEntryAddress + 13];
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
-        ireturn;
+        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+
     endif;
 
     // Fetch the user name from the User Table and return it
@@ -344,15 +275,18 @@ if(systemCallNum == 26) then // Getuid
     
 endif;
 
+RELEASE_KERNEL_LOCK_AND_IRETURN:
+// calling RELEASE KERNEL LOCK
+multipush(R3);
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R3);
 
 // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
 [processTableEntryAddress + 9] = 0;
 SP = [processTableEntryAddress + 13];
 
-// calling RELEASE KERNEL LOCK
-R1 = RELEASE_LOCK;
-R2 = KERN_LOCK;
-call ACCESS_CONTROL;
 ireturn;
 
 

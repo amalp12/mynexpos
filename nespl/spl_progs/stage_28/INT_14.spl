@@ -1,18 +1,21 @@
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
 
 // At the beginning of interrupt routine 14, extract the system call number from the user stack and switch to the kernel stack.
 alias userSP R1;
 alias systemCallNum R2;
 alias processTableEntryAddress R3;
-processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16;
 // Save the user stack pointer in the process table
 [processTableEntryAddress + 13]= SP;
 
 // switch to the kernel stack
 SP = [processTableEntryAddress + 11] * 512  - 1 ;
 PTBR = [processTableEntryAddress + 14] ;
+
+// call AQUIRE KERNEL LOCK
+multipush(R1,R2,R3);
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R1,R2,R3);
 
 userSP = [processTableEntryAddress + 13];
 systemCallNum = [[PTBR + 2*((userSP-5)/512)] * 512 + ((userSP-5)%512)] ;
@@ -38,14 +41,17 @@ if(semId>7 || semId < 0 || [perProcessTableSemaphoreEntry] != 1 ) then
     //  return to the user mode with -1 stored as return value indicating failure.
     [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -1;
 
+    // calling RELEASE KERNEL LOCK
+    multipush(R3);
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R3);
+
     // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
     [processTableEntryAddress + 9] = 0;
     SP = [processTableEntryAddress + 13];
 
-    // calling RELEASE KERNEL LOCK
-    R1 = RELEASE_LOCK;
-    R2 = KERN_LOCK;
-    call ACCESS_CONTROL;
     ireturn;
 endif;
 
@@ -71,7 +77,7 @@ if(systemCallNum == 19) then //  SemLock
 
 
 
-    while([semaphoreTableEntryAddress] != -1 && [semaphoreTableEntryAddress] != [SYSTEM_STATUS_TABLE+1]) do // LOCKING PROCESS
+    while([semaphoreTableEntryAddress] != -1 && [semaphoreTableEntryAddress] != [SYSTEM_STATUS_TABLE + 5*CORE + 1]) do // LOCKING PROCESS
 
         // Change the state of the current process to (WAIT_SEMAPHORE, Semaphore table index of the locked semaphore).
         [processTableEntryAddress + 4] = WAIT_SEMAPHORE;
@@ -86,7 +92,7 @@ if(systemCallNum == 19) then //  SemLock
     // Reaches here when the semaphore becomes free for locking 
 
     // Change the Locking PID to PID of the current process in the Semaphore Table .
-    [semaphoreTableEntryAddress] = [SYSTEM_STATUS_TABLE+1];
+    [semaphoreTableEntryAddress] = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 
 endif;
 
@@ -95,16 +101,20 @@ if(systemCallNum == 20) then // SemUnLock
     if([semaphoreTableEntryAddress] != -1) then // If semaphore is locked. (Check the Locking PID in the Semaphore table )
 
         // If current process has not locked the semaphore, return -2.  ( The semaphore is locked by some other process.)
-        if([semaphoreTableEntryAddress] != [SYSTEM_STATUS_TABLE+1]) then
+        if([semaphoreTableEntryAddress] != [SYSTEM_STATUS_TABLE + 5*CORE + 1]) then
 
             [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -2;
-            [processTableEntryAddress + 9] = 0;
-            SP = [processTableEntryAddress + 13];
-
+            
             // calling RELEASE KERNEL LOCK
+            multipush(R3);
             R1 = RELEASE_LOCK;
             R2 = KERN_LOCK;
             call ACCESS_CONTROL;
+            multipop(R3);
+
+            [processTableEntryAddress + 9] = 0;
+            SP = [processTableEntryAddress + 13];
+
             ireturn;
         endif;
         
@@ -127,15 +137,18 @@ endif;
 
 // return to the user mode with 0 stored as return value indicating success.
 [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = 0;
+
+// calling RELEASE KERNEL LOCK
+multipush(R3);
+R1 = RELEASE_LOCK;
+R2 = KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R3);
 // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
 [processTableEntryAddress + 9] = 0;
 SP = [processTableEntryAddress + 13];
 
 
-// calling RELEASE KERNEL LOCK
-R1 = RELEASE_LOCK;
-R2 = KERN_LOCK;
-call ACCESS_CONTROL;
 ireturn;
 
 

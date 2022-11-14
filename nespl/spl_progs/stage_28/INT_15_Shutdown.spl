@@ -1,17 +1,20 @@
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
 
 
 alias userSP R1;
 alias processTableEntryAddress R3;
-processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16;
+processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16;
 // Save the user stack pointer in the process table
 [processTableEntryAddress + 13]= SP;
 
 // switch to the kernel stack
 SP = [processTableEntryAddress + 11] * 512  - 1 ;
 PTBR = [processTableEntryAddress + 14] ;
+
+// call AQUIRE KERNEL LOCK
+multipush(R1,R2,R3);
+R1 = ACQUIRE_KERN_LOCK;
+call ACCESS_CONTROL;
+multipop(R1,R2,R3);
 
 userSP = [processTableEntryAddress + 13];
 
@@ -24,14 +27,17 @@ if ([processTableEntryAddress + 1] != 2 || [processTableEntryAddress + 3] != 1) 
      //  return to the user mode with -1 stored as return value indicating failure.
     [[PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512)] = -1;
 
+    // calling RELEASE KERNEL LOCK
+    multipush(R3);
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R3);
+
     // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
     [processTableEntryAddress + 9] = 0;
     SP = [processTableEntryAddress + 13];
 
-    // calling RELEASE KERNEL LOCK
-    R1 = RELEASE_LOCK;
-    R2 = KERN_LOCK;
-    call ACCESS_CONTROL;
     ireturn;
 endif;
 
@@ -46,14 +52,14 @@ endif;
 multipush(R1,R2,R3);
 //inode table
 R1 = DISK_STORE;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 R3 = 59;
 R4 = 3;
 call DEVICE_MANAGER;
 
 // inode table + user table
 R1 = DISK_STORE;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 R3 = 60;
 R4 = 4;
 call DEVICE_MANAGER;
@@ -62,7 +68,7 @@ call DEVICE_MANAGER;
 //root file
 
 R1 = DISK_STORE;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 R3 = 62;
 R4 = 5;
 call DEVICE_MANAGER;
@@ -71,7 +77,7 @@ call DEVICE_MANAGER;
 
 //disk free list
 R1 = DISK_STORE;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 R3 = 61;
 R4 = 2;
 call DEVICE_MANAGER;
@@ -83,7 +89,7 @@ reset;
 
 // Invoke Kill All function of process manager module . Kill All terminates all the processes except IDLE, INIT and the process calling Shutdown.
 R1 = KILL_ALL;
-R2 = [SYSTEM_STATUS_TABLE + 1];
+R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
 call PROCESS_MANAGER;
 
 multipop(R1,R2,R3);
@@ -105,7 +111,7 @@ while (bufferNumber < MAX_BUFFER) do
         multipush(R1,R2,R3,R4,R5);
         // Arguements are PID, Page Number, Block Number	
         R1 = DISK_STORE;
-        R2 = [SYSTEM_STATUS_TABLE+1]; //  PID
+        R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1]; //  PID
         R3 = BUFFER_BASE + bufferNumber; // Page Number
         R4 = [bufferTableEntryAddress]; // Block Number
         call DEVICE_MANAGER;
