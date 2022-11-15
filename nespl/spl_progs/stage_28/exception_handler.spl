@@ -13,17 +13,14 @@
 
 
 
+// Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16)+ 9] = -1;
 // Switch to the kernel stack and backup the register context and push EIP onto the stack.
 [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 13] = SP;
 SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 11] * 512  - 1 ;
 backup;
 multipush(EIP);
 
-// call AQUIRE KERNEL LOCK
-multipush(EPN,EIP,EC,EMA,EIP);
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
-multipop(EMA,EC,EIP,EPN,EIP);
 
 alias userSP R1;
 
@@ -42,10 +39,7 @@ ptbr = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 14];
 
 if(EC!=0 || userSP==lastStackPageNum) then
     
-    R10 = "EXEPTION:";
-    breakpoint;
-    // Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
-    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16)+ 9] = -1;
+    R10 = "EXCEPTION:";
 
     print "-------";
 	print "ERROR HALTING";
@@ -61,10 +55,13 @@ if(EC!=0 || userSP==lastStackPageNum) then
 	else
 		if(EC == 2) then
 			print "MEMORY ILLEGAL";
-			print EMA;
+		    print EIP;
+            print EMA;
 		else
 			print "ARITH ILLEGAL";
-		endif;
+	    	print EIP;
+
+        endif;
 	endif;
 	
 	print "-------";
@@ -78,10 +75,7 @@ if(EC!=0 || userSP==lastStackPageNum) then
     multipop(R0,R1,R2,R3,R4,R5);
 
 
-    // calling RELEASE KERNEL LOCK
-    R1 = RELEASE_LOCK;
-    R2 = KERN_LOCK;
-    call ACCESS_CONTROL;
+  
 
     // Call Scheduler
     call SCHEDULER;
@@ -89,10 +83,12 @@ if(EC!=0 || userSP==lastStackPageNum) then
 
 else
 
-    // print "Page Fault";
+    // call AQUIRE KERNEL LOCK
+    multipush(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
+    R1 = ACQUIRE_KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
 
-    // Set the MODE FLAG to -1 in the process table of the current process, indicating in exception handler.
-    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16)+ 9] = -1;
     
     // if the page that caused the exception is a code page
     // code pages are 4,5,6,7
@@ -100,12 +96,12 @@ else
         // get the code block number to be loaded from the disk map table. For this block, invoke the Get Code Page function present in the memory manager module. 
         alias codeBlockNumber R4;
         codeBlockNumber = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1] *10+ EPN];
-        multipush(R1,R2,R3,R4,R5,EPN);
+        multipush(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
         // Arguements are Block Number	
         R1 = GET_CODE_PAGE;
         R2 = codeBlockNumber;
         call MEMORY_MANAGER; // MOD 2
-        multipop(R1,R2,R3,R4,R5,EPN);
+        multipop(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
 
         // Update the page table entry for this code page,set the page number 
         // to memory page obtained fromGet Code Pagefunction and 
@@ -138,16 +134,18 @@ else
     
 
     
+    // calling RELEASE KERNEL LOCK
+    multipush(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R1,R2,R3,R4,R5,EIP,EC,EPN,EMA);
 
 endif;
 
 // Reset the MODE FLAG to 0. Pop EIP from the stack and restore the register context.
 [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*16)+ 9] = 0;
 
-// calling RELEASE KERNEL LOCK
-R1 = RELEASE_LOCK;
-R2 = KERN_LOCK;
-call ACCESS_CONTROL;
 
 multipop(EIP);
 restore;
@@ -157,7 +155,6 @@ SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 13];
 SP = SP + 1;
 
 [[[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 14] + 2*((SP)/512)] * 512 + ((SP)%512)] = EIP;
-
 
 // Return to the user mode.
 ireturn;

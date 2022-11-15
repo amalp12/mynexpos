@@ -5,13 +5,6 @@ loadi(55,68);
 //  Load the idle code from disk to memory.
 loadi(69,11);
 
-// Transfer the secondary bootstrap loader code from disk to memory
-loadi(128,512);
-loadi(129,513);
-
-// Access Control
-loadi(132,516);
-loadi(133,517);
 
 
 
@@ -23,8 +16,8 @@ call BOOT_MODULE;
 
 // IDLE
 alias iter R1;
-iter=IDLE2_PROCESS;
-while(iter<=IDLE_PROCESS) do
+iter=IDLE_PROCESS;
+while(iter<=SWAPPER_DAEMON) do
     PTBR = PAGE_TABLE_BASE+iter*20; // 29696 //as PID of idle process is 0
     PTLR = 10;
     alias stackPage R2;
@@ -67,9 +60,10 @@ while(iter<=IDLE_PROCESS) do
     [PTBR+18] = -1;
     [PTBR+19] = "0000";
 
-    iter = iter+1;
-    if(iter==SWAPPER_DAEMON) then
-        iter = IDLE_PROCESS;
+    if(iter==IDLE_PROCESS) then
+        iter = IDLE2_PROCESS;
+    else
+        iter = iter+1;
     endif;
 
 endwhile;
@@ -92,7 +86,7 @@ endwhile;
 
 alias swapperDaemonProcessTableEntry R1;
 
-swapperDaemonProcessTableEntry = PROCESS_TABLE + 16*15;
+swapperDaemonProcessTableEntry = PROCESS_TABLE + 16*SWAPPER_DAEMON;
 [swapperDaemonProcessTableEntry ] = 0 ;
 [swapperDaemonProcessTableEntry +  1] = SWAPPER_DAEMON ;// PID
 [swapperDaemonProcessTableEntry + 3] = KERNEL; // USERID 
@@ -101,7 +95,7 @@ swapperDaemonProcessTableEntry = PROCESS_TABLE + 16*15;
 [swapperDaemonProcessTableEntry +  11] = 82; // USER AREA PAGE NUMBER	 
 [swapperDaemonProcessTableEntry + 12] = 0; // KERNEL STACK POINTER (KPTR)	
 [swapperDaemonProcessTableEntry + 13] = 8*PAGE_SIZE; // USER STACK POINTER (UPTR)	
-[swapperDaemonProcessTableEntry + 14] = PAGE_TABLE_BASE + 20*15;
+[swapperDaemonProcessTableEntry + 14] = PAGE_TABLE_BASE + 20*SWAPPER_DAEMON;
 [swapperDaemonProcessTableEntry + 15] = 10; // PTLR
 
 
@@ -109,7 +103,7 @@ swapperDaemonProcessTableEntry = PROCESS_TABLE + 16*15;
 
 alias idle2ProcessTableEntry R1;
 
-idle2ProcessTableEntry = PROCESS_TABLE + 16*14;
+idle2ProcessTableEntry = PROCESS_TABLE + 16*IDLE2_PROCESS;
 [idle2ProcessTableEntry ] = 0 ; // TICK
 [idle2ProcessTableEntry +  1] = IDLE2_PROCESS ;// PID
 [idle2ProcessTableEntry + 3] = KERNEL; // USERID 
@@ -118,7 +112,7 @@ idle2ProcessTableEntry = PROCESS_TABLE + 16*14;
 [idle2ProcessTableEntry +  11] = 84; // USER AREA PAGE NUMBER	 
 [idle2ProcessTableEntry + 12] = 0; // KERNEL STACK POINTER (KPTR)	
 [idle2ProcessTableEntry + 13] = 8*PAGE_SIZE; // USER STACK POINTER (UPTR)	
-[idle2ProcessTableEntry + 14] = PAGE_TABLE_BASE + 20*14;
+[idle2ProcessTableEntry + 14] = PAGE_TABLE_BASE + 20*IDLE2_PROCESS;
 [idle2ProcessTableEntry + 15] = 10; // PTLR
 // [83 * PAGE_SIZE] = [69*PAGE_SIZE + 1]; // Idle 2 (Done in secondary bootstrap)
 
@@ -130,9 +124,6 @@ idle2ProcessTableEntry = PROCESS_TABLE + 16*14;
 
 
 
-
-PTBR = PAGE_TABLE_BASE; // 29696 //as PID of idle process is 0
-PTLR = 10;
 
 // Setting Process ID in System Status Table to 0
 [SYSTEM_STATUS_TABLE+1] = IDLE_PROCESS;
@@ -146,14 +137,17 @@ PTLR = 10;
 [SCHED_LOCK] = 0;
 
 
-// Issue the START instruction to start the secondary core into execution.
-start;
 
 
 
+
+PTBR = PAGE_TABLE_BASE; // 29696 //as PID of idle process is 0
+PTLR = 10;
 [81 * PAGE_SIZE] = [69*PAGE_SIZE + 1]; // SWAPPER DAEMON
 SP = 8*PAGE_SIZE; //  accessing stack  from the page table using logical address
 
+// Issue the START instruction to start the secondary core into execution.
+start;
 ireturn; 
  
   

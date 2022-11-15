@@ -53,7 +53,7 @@ echo "Module 4 Device Manager Compiled"
 echo "Scheduler Compiled"
 ./spl ./spl_progs/stage_28/MOD_6_Pager.spl
 echo "Module 6 Pager Module Compiled"
-./spl ./spl_progs/stage_27/boot_module_s27.spl
+./spl ./spl_progs/stage_28/boot_module_s28.spl
 echo "Module 7 Boot Module Compiled"
 ./spl ./spl_progs/stage_28/MOD_8_Access_Control.spl
 echo "Module 8 Access Control Module Compiled"

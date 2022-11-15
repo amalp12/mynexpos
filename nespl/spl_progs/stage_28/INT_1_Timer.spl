@@ -118,8 +118,8 @@ processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 
 
 // increasing tick of every program
 alias iter R1;
-iter=SHELL_PROCESS;
-while(iter<MAX_PROC_NUM-1) do
+iter=0;
+while(iter<MAX_PROC_NUM) do
     [PROCESS_TABLE + iter*16 ] = [PROCESS_TABLE + iter*16] + 1;
     iter = iter +1;
 endwhile;

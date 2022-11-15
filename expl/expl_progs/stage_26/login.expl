@@ -11,10 +11,9 @@ int main()
 			temp = exposcall("Write", -2, "-Username-");
 			temp = exposcall("Read", -1, username);
 			
-			
 			temp = exposcall("Write", -2, "-Password-");
 			temp = exposcall("Read", -1, pwd);
-			
+					
 			temp = exposcall("Login",username,pwd);
 
 			if(temp==-1)then

@@ -1,6 +1,6 @@
 alias functionNum R1;
 
-// breakpoint;
+
 if(functionNum == GET_FREE_PAGE) then
     // Arguements are NIL
     // Increment WAIT_MEM_COUNT field in the system status table. //Do not increment the WAIT_MEM_COUNT in busy loop (an important step )

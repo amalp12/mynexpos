@@ -10,6 +10,7 @@ begin
     while(a == 1) do
         temp = exposcall("Write",-2, "---Enter---");
         temp = exposcall("Read",-1, input);
+      
 
         flag=0;
         if(input == "Logout" OR input == "Shutdown") then
@@ -26,6 +27,7 @@ begin
             temp = exposcall("Read",-1, username);
             temp = exposcall("Read",-1, password);
         endif;
+ 
 
         if(flag==1) then
             retcom = exposcall(input, username, password);
@@ -38,6 +40,8 @@ begin
             endif;
         else
             pid = exposcall("Fork");
+            breakpoint;
+            temp = exposcall("Write",-2,pid);
             if(pid < 0) then
                 temp = exposcall("Write",-2, "Fork Fail");
                 continue;

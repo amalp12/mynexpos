@@ -22,7 +22,7 @@ PTBR = [processTableEntryAddress + 14] ;
 multipush(R1,R2,R3);
 R1 = ACQUIRE_KERN_LOCK;
 call ACCESS_CONTROL;
-multipush(R1,R2,R3);
+multipop(R1,R2,R3);
 
 userSP = [processTableEntryAddress + 13];
 
@@ -52,7 +52,7 @@ if(systemCallNum == 27) then// Login
         R1 = RELEASE_LOCK;
         R2 = KERN_LOCK;
         call ACCESS_CONTROL;
-        multipush(ßR3);
+        multipop(R3);
 
         // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
         [processTableEntryAddress + 9] = 0;
@@ -92,7 +92,7 @@ if(systemCallNum == 27) then// Login
         R1 = RELEASE_LOCK;
         R2 = KERN_LOCK;
         call ACCESS_CONTROL;
-        multipush(R3);
+        multipop(R3);
 
         // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
         [processTableEntryAddress + 9] = 0;
@@ -117,7 +117,7 @@ if(systemCallNum == 27) then// Login
         R1 = RELEASE_LOCK;
         R2 = KERN_LOCK;
         call ACCESS_CONTROL;
-        multipush(R3);
+        multipop(R3);
 
         // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
         [processTableEntryAddress + 9] = 0;
@@ -129,21 +129,30 @@ if(systemCallNum == 27) then// Login
 
     // In the process table entry for the shell process, set STATE as CREATED and USERID as that of the user who is logging in.
     // process ID of shell is 2
-    [PROCESS_TABLE+ 16*2 + 4] = CREATED;
+    [PROCESS_TABLE+ 16*SHELL_PROCESS + 4] = CREATED;
     // The userid assigned to a user is the index of the curresponding entry in the user table. The userid of kernel is 0 and the root is 1.
-    [PROCESS_TABLE+ 16*2 + 3] = userId;
+    [PROCESS_TABLE+ 16*SHELL_PROCESS + 3] = userId;
 
 
     // Set the state of the current process in it's process table entry as (WAIT_PROCESS, 2) /* Login waits for shell to exit */
     [processTableEntryAddress + 4] = WAIT_PROCESS;
-    [processTableEntryAddress + 5] = 2;
+    [processTableEntryAddress + 5] = SHELL_PROCESS;
 
     // In system status table, set the CURRENT_USER_ID as that of the user who is logging in.
     [SYSTEM_STATUS_TABLE] = userId;
 
     // Invoke the context_switch() function in the Scheduler Module.
     multipush(R1,R2,R3,R4,R5,R6,R7); // Save the registers
+    
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
+
     call SCHEDULER;
+
+    R1 = ACQUIRE_KERN_LOCK;
+    call ACCESS_CONTROL;
+    
     multipop(R1,R2,R3,R4,R5,R6,R7); // Restore the registers
 endif;
 
@@ -152,7 +161,7 @@ multipush(R3);
 R1 = RELEASE_LOCK;
 R2 = KERN_LOCK;
 call ACCESS_CONTROL;
-multipush(R3);
+multipop(R3);
 
 // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
 [processTableEntryAddress + 9] = 0;

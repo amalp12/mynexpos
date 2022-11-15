@@ -8,7 +8,6 @@ PTLR = 10;
 [83*PAGE_SIZE] = [69*PAGE_SIZE + 1];
 
 SP = 8*PAGE_SIZE; //  accessing stack  from the page table using logical address
-breakpoint;
 ireturn; 
  
   

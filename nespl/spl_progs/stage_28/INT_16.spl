@@ -47,7 +47,7 @@ if(systemCallNum == 22) then// Newusr
     if([SYSTEM_STATUS_TABLE] !=  1 || [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2)then
         [returnAddress] = -2;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -61,7 +61,7 @@ if(systemCallNum == 22) then// Newusr
         if([USER_TABLE + iter*2] == userName) then
             [returnAddress] = -1;
 
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
 
         endif;
         
@@ -78,7 +78,7 @@ if(systemCallNum == 22) then// Newusr
     if(userTableEntryAddress == -1)then
         [returnAddress] = -3;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -102,7 +102,7 @@ if(systemCallNum == 23)then // Remusr
     if([SYSTEM_STATUS_TABLE] != 1 || [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2) then
         [returnAddress] = -2;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -110,7 +110,7 @@ if(systemCallNum == 23)then // Remusr
     if(userName == "root" || userName == "kernel") then
         [returnAddress] = -2;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -132,7 +132,7 @@ if(systemCallNum == 23)then // Remusr
     if(userTableEntryAddress == -1) then
         [returnAddress] = -1;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -144,7 +144,7 @@ if(systemCallNum == 23)then // Remusr
         if([ROOT_FILE+iter*8+3] == userName) then
             [returnAddress] = -3;
 
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
 
         endif;
 
@@ -171,7 +171,7 @@ if(systemCallNum == 24) then// Setpwd
     if( [SYSTEM_STATUS_TABLE + 5*CORE + 1] != 2)then
         [returnAddress] = -1;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -196,7 +196,7 @@ if(systemCallNum == 24) then// Setpwd
     if( userId == -1)then
         [returnAddress] = -2;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -206,7 +206,7 @@ if(systemCallNum == 24) then// Setpwd
         if([SYSTEM_STATUS_TABLE] != 1) then
             [returnAddress] = -1;
 
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
 
         endif;
 
@@ -233,7 +233,7 @@ if(systemCallNum == 25) then// Getuname
     if(userId < 0 || userId >15) then
         [returnAddress] = -1;
         
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -245,7 +245,7 @@ if(systemCallNum == 25) then// Getuname
     if([userTableEntryAddress] == -1) then
         [returnAddress] = -1;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
     endif;
 
@@ -275,7 +275,7 @@ if(systemCallNum == 26) then // Getuid
     
 endif;
 
-RELEASE_KERNEL_LOCK_AND_IRETURN:
+KERN_IRET:
 // calling RELEASE KERNEL LOCK
 multipush(R3);
 R1 = RELEASE_LOCK;

@@ -36,7 +36,7 @@ returnAddress = [PTBR + 2*((userSP-1)/512)] * 512 + ((userSP-1)%512) ;
 
 
 
-if(systemCallNum == 2) then //  Open
+if(systemCallNum == INT_OPEN) then //  Open
     alias fileName R4;
 
     //  Find a free Per-Process Resource Table entry.
@@ -65,7 +65,7 @@ if(systemCallNum == 2) then //  Open
         //  return to the user mode with -3 stored as return value indicating Process has reached its limit of resources.
             [returnAddress] = -3;
 
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
 
     endif;
 
@@ -82,7 +82,7 @@ if(systemCallNum == 2) then //  Open
             //  return to the user mode with the error code stored as return value.
             [returnAddress] = R0;
 
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
 
 
     endif;
@@ -96,11 +96,12 @@ if(systemCallNum == 2) then //  Open
     // Return the index of the Per-Process Resource Table entry.   ( success )
     // The index of this entry is the File Descriptor of the file.
     [returnAddress] = freeEntry;
+    goto KERN_IRET;
 endif;
 
 
 
-if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
+if(systemCallNum == INT_SEEK || systemCallNum ==  INT_CLOSE) then // seek or close
 
     //  If file descriptor is invalid, return -1.     File descriptor value should be within the range 0 to 7 (both included). 
     alias fileDescriptor R4;
@@ -108,7 +109,7 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
         [returnAddress] = -1;
 
         
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
 
 
     endif;
@@ -123,7 +124,7 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
     if([perProcessResouceTableEntry] == -1 || [perProcessResouceTableEntry] != FILE) then
         [returnAddress] = -1;
 
-        goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+        goto KERN_IRET;
         
     endif;
 
@@ -132,7 +133,7 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
     alias openFileTableEntry R7;
     openFileTableEntry = OPEN_FILE_TABLE + [perProcessResouceTableEntry + 1] * 4;
     
-    if(systemCallNum == 6) then
+    if(systemCallNum == INT_SEEK) then
         // Get the index of the Inode Table entry from the Open File Table entry. ([openFileTableEntry+1])
         alias inodeIndexOfFile R8;
         alias inodeTableEntryAddress R9;
@@ -149,7 +150,7 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
                 //  return to the user mode with -3 stored as return value indicating failure.
                 [returnAddress] = -3;
 
-                goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+                goto KERN_IRET;
 
             endif;
         endif;
@@ -168,7 +169,7 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
         if(R0 == -1) then
             [returnAddress] = -1;
             
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_IRET;
             
         endif;
 
@@ -191,21 +192,12 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
 
         //    2. If (lseek + the given offset) is less than 0, release_inode() and return -2.
         if([openFileTableEntry+2] + offset < 0 ) then 
-
-            //  Release the Lock on the File by calling the release_inode() function in the Resource Manager module.
-            // calling RELEASE_INODE
-            multipush(R1,R2,R3,R4,R5,R6,R7,R8, R9,R10,R11);
-            R1 = RELEASE_INODE;
-            R2 = inodeIndexOfFile;
-            R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
-            call RESOURCE_MANAGER;
-            multipop(R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11);
             
             
             [returnAddress] = -2;
             
           
-            goto RELEASE_KERNEL_LOCK_AND_IRETURN;
+            goto KERN_INODE_IRET;
 
         endif;
         
@@ -228,8 +220,11 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
             endif;
         endif;
 
+        //  return to the user mode with 0 stored as return value indicating success.
+        [returnAddress] = 0;
 
 
+        KERN_INODE_IRET:
         //  Release the Lock on the File by calling the release_inode() function in the Resource Manager module.
         // calling RELEASE_INODE
         multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11);
@@ -238,9 +233,10 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
         R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
         call RESOURCE_MANAGER;
         multipop(R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11);
+        goto KERN_IRET;
     endif;
 
-    if(systemCallNum == 3) then // Close
+    if(systemCallNum == INT_CLOSE) then // Close
         // Get the index of the Open File Table entry from Per-Process Resource Table entry. ([perProcessResouceTableEntry+1])
         multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11);
         R1 = CLOSE;
@@ -252,14 +248,17 @@ if(systemCallNum == 6 || systemCallNum ==  3) then // seek or close
         // Invalidate the Per-Process Resource Table entry.
         [perProcessResouceTableEntry] = -1;
         [perProcessResouceTableEntry+1] = -1;
+
+        //  return to the user mode with 0 stored as return value indicating success.
+        [returnAddress] = 0;
+        goto KERN_IRET;
+
     endif;
 
 
-    //  return to the user mode with 0 stored as return value indicating success.
-    [returnAddress] = 0;
 endif;
 
-RELEASE_KERNEL_LOCK_AND_IRETURN:
+KERN_IRET:
 // calling RELEASE KERNEL LOCK
 multipush(R3);
 R1 = RELEASE_LOCK;
