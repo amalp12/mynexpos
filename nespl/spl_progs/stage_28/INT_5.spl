@@ -11,11 +11,6 @@ processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16
 SP = [processTableEntryAddress + 11] * 512  - 1 ;
 PTBR = [processTableEntryAddress + 14] ;
 
-multipush(R1,R2,R3);
-// call AQUIRE KERNEL LOCK
-R1 = ACQUIRE_KERN_LOCK;
-call ACCESS_CONTROL;
-multipop(R1,R2,R3);
 
 userSP = [processTableEntryAddress + 13];
 systemCallNum = [[PTBR + 2*((userSP-5)/512)] * 512 + ((userSP-5)%512)] ;
@@ -65,13 +60,20 @@ if(systemCallNum == INT_OPEN) then //  Open
         //  return to the user mode with -3 stored as return value indicating Process has reached its limit of resources.
             [returnAddress] = -3;
 
-            goto KERN_IRET;
+            goto IRET;
 
     endif;
 
 
     // Call the open() function from the File Manager module to get the Open File table entry.
     multipush(R1,R2,R3,R4,R5,R6,R7);
+
+    multipush(R4);
+    // call AQUIRE KERNEL LOCK
+    R1 = ACQUIRE_KERN_LOCK;
+    call ACCESS_CONTROL;
+    multipop(R4);
+
     R1 = OPEN;
     R2 = fileName;
     call FILE_MANAGER;
@@ -109,7 +111,7 @@ if(systemCallNum == INT_SEEK || systemCallNum ==  INT_CLOSE) then // seek or clo
         [returnAddress] = -1;
 
         
-        goto KERN_IRET;
+        goto IRET;
 
 
     endif;
@@ -124,7 +126,7 @@ if(systemCallNum == INT_SEEK || systemCallNum ==  INT_CLOSE) then // seek or clo
     if([perProcessResouceTableEntry] == -1 || [perProcessResouceTableEntry] != FILE) then
         [returnAddress] = -1;
 
-        goto KERN_IRET;
+        goto IRET;
         
     endif;
 
@@ -158,6 +160,12 @@ if(systemCallNum == INT_SEEK || systemCallNum ==  INT_CLOSE) then // seek or clo
 
         // Acquire the Lock on the File by calling the acquire_inode() function in the Resource Manager module.
         multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9);
+        multipush(R8);
+        // call AQUIRE KERNEL LOCK
+        R1 = ACQUIRE_KERN_LOCK;
+        call ACCESS_CONTROL;
+        multipop(R8);
+
         R1 = ACQUIRE_INODE;
         R2 = inodeIndexOfFile;
         R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
@@ -239,6 +247,12 @@ if(systemCallNum == INT_SEEK || systemCallNum ==  INT_CLOSE) then // seek or clo
     if(systemCallNum == INT_CLOSE) then // Close
         // Get the index of the Open File Table entry from Per-Process Resource Table entry. ([perProcessResouceTableEntry+1])
         multipush(R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11);
+        multipush(R6);
+        // call AQUIRE KERNEL LOCK
+        R1 = ACQUIRE_KERN_LOCK;
+        call ACCESS_CONTROL;
+        multipop(R6);
+
         R1 = CLOSE;
         R2 = [perProcessResouceTableEntry+1];
         call FILE_MANAGER;
@@ -265,7 +279,8 @@ R1 = RELEASE_LOCK;
 R2 = KERN_LOCK;
 call ACCESS_CONTROL;
 multipop(R3);
-
+goto IRET;
+IRET:
 // At any point of return to user, remember to reset the MODE FLAG and change the stack to user stack.
 [processTableEntryAddress + 9] = 0;
 SP = [processTableEntryAddress + 13];

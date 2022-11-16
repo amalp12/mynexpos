@@ -40,6 +40,7 @@ ptbr = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 16) + 14];
 if(EC!=0 || userSP==lastStackPageNum) then
     
     R10 = "EXCEPTION:";
+    breakpoint;
 
     print "-------";
 	print "ERROR HALTING";
