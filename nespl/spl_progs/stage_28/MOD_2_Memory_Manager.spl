@@ -114,6 +114,7 @@ if(functionNum ==  GET_CODE_PAGE) then // 5
     R3 = R0;
     call DEVICE_MANAGER; // DEVICE_MANAGER 
     multipop(R0,R1,R2,R3);
+    // R0 contains allocated page.
 
 
 endif;
@@ -123,7 +124,7 @@ if(functionNum ==  RELEASE_BLOCK) then // 4
     alias blockNumber R2;
     alias processId R3;
 
-    [DISK_FREE_LIST + blockNumber] = [DISK_FREE_LIST + blockNumber] - 1;
+    [DISK_FREE_LIST + blockNumber] = 0;
 
 endif;
 

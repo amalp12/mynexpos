@@ -65,8 +65,14 @@ if(systemCallNum == 13) then // Wait
     [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 5] = waitPID;
 
     multipush(R0,R1,R2, R3);
+    R1 = RELEASE_LOCK;
+    R2 = KERN_LOCK;
+    call ACCESS_CONTROL;
     // Invoke the scheduler to schedule other processes.
     call SCHEDULER;
+
+    R1 = ACQUIRE_KERN_LOCK;
+	call ACCESS_CONTROL;
     multipop(R0,R1,R2,R3);
 
   

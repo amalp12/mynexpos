@@ -39,9 +39,8 @@ begin
                 endif;
             endif;
         else
-            pid = exposcall("Fork");
             breakpoint;
-            temp = exposcall("Write",-2,pid);
+            pid =exposcall("Fork");
             if(pid < 0) then
                 temp = exposcall("Write",-2, "Fork Fail");
                 continue;

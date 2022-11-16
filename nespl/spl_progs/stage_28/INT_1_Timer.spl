@@ -19,9 +19,7 @@ if([SYSTEM_STATUS_TABLE+5] != 0 && CORE == PRIMARY_CORE) then
     // if the current process is the Swapper Daemon and Paging Status is SWAP_OUT,
     if([SYSTEM_STATUS_TABLE + 5*CORE + 1] == SWAPPER_DAEMON  ) then
 
-        // call AQUIRE KERNEL LOCK
-        R1 = ACQUIRE_KERN_LOCK;
-        call ACCESS_CONTROL;
+        
     
         if([SYSTEM_STATUS_TABLE+5] == SWAP_OUT) then
             // Call the swap_out() function in the Pager Module.
@@ -38,10 +36,7 @@ if([SYSTEM_STATUS_TABLE+5] != 0 && CORE == PRIMARY_CORE) then
             call PAGER_MODULE;
         endif;
 
-        // calling RELEASE KERNEL LOCK
-        R1 = RELEASE_LOCK;
-        R2 = KERN_LOCK;
-        call ACCESS_CONTROL;
+        
     endif;
         // else if the current process is Idle,                          
         // Swapping is ongoing, but the daemon is blocked for some disk operation and idle is being run now 
@@ -74,7 +69,7 @@ else
             // if MEM_FREE_COUNT is greater than MEM_HIGH
         
 
-            while(iter < MAX_PROC_NUM-1) do
+            while(iter < IDLE2_PROCESS) do
                 processTableEntryAddress  = PROCESS_TABLE + 16 * iter; 
                 
                 // if any process has TICK greater than MAX_TICK
@@ -120,7 +115,9 @@ processTableEntryAddress = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1] * 
 alias iter R1;
 iter=0;
 while(iter<MAX_PROC_NUM) do
-    [PROCESS_TABLE + iter*16 ] = [PROCESS_TABLE + iter*16] + 1;
+    if([PROCESS_TABLE + 16*iter + 1] >= 0) then
+        [PROCESS_TABLE + iter*16 ] = [PROCESS_TABLE + iter*16] + 1;
+    endif;
     iter = iter +1;
 endwhile;
 
