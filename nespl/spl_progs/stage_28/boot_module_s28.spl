@@ -297,7 +297,7 @@ diskMaptableEntryAddress = DISK_MAP_TABLE + 2*10;
 
 alias cutMemory R1;
 count = 0;
-cutMemory = 83;
+cutMemory = 85;
 
 while(count < cutMemory)do
     [MEMORY_FREE_LIST+count] = 1;
@@ -312,7 +312,7 @@ endwhile;
 
 
 [SYSTEM_STATUS_TABLE+3] = 0; // WAIT_MEM_COUNT
-[SYSTEM_STATUS_TABLE+2] = 128-cutMemory; // FREE_MEM_COUNT = 45
+[SYSTEM_STATUS_TABLE+2] = 128-cutMemory; // FREE_MEM_COUNT = 43
 
 // Initialize the STATUS field in the Disk Status Table to 0.
 [DISK_STATUS_TABLE] =0;

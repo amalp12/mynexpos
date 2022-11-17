@@ -135,8 +135,18 @@ idle2ProcessTableEntry = PROCESS_TABLE + 16*IDLE2_PROCESS;
 // The access control variables KERN_LOCK and SCHED_LOCK of the Access Lock Table must be initialized to 0.
 [KERN_LOCK] = 0;
 [SCHED_LOCK] = 0;
+[KERN_LOCK] = 0;
+[SCHED_LOCK] = 0;
 
 
+// -- For Peterson algorithm -- //
+[ACCESS_LOCK_TABLE + 3] = 0;
+[ACCESS_LOCK_TABLE + 4] = 0;
+[ACCESS_LOCK_TABLE + 5] = 0;
+[ACCESS_LOCK_TABLE + 6] = 0;
+[ACCESS_LOCK_TABLE + 7] = 0;
+
+// -- For Peterson algorithm -- //
 
 
 
