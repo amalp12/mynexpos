@@ -22,7 +22,7 @@ while(iter<=SWAPPER_DAEMON) do
     PTLR = 10;
     alias stackPage R2;
     if(iter==IDLE_PROCESS) then
-        stackPage = 76;
+        stackPage = 70;
     endif;
     if(iter==SWAPPER_DAEMON) then
         stackPage = 81;
@@ -135,8 +135,6 @@ idle2ProcessTableEntry = PROCESS_TABLE + 16*IDLE2_PROCESS;
 // The access control variables KERN_LOCK and SCHED_LOCK of the Access Lock Table must be initialized to 0.
 [KERN_LOCK] = 0;
 [SCHED_LOCK] = 0;
-[KERN_LOCK] = 0;
-[SCHED_LOCK] = 0;
 
 
 // -- For Peterson algorithm -- //
@@ -159,6 +157,3 @@ SP = 8*PAGE_SIZE; //  accessing stack  from the page table using logical address
 // Issue the START instruction to start the secondary core into execution.
 start;
 ireturn; 
- 
-  
-
