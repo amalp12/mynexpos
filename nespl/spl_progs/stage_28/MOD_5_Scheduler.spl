@@ -1,3 +1,4 @@
+breakpoint;
 // Pushing BP of current process because expl program does not save the BP while the schduler is called from the timer
 multipush(BP);
 // 2 Obtain the PID of currently executing process from System Status Table.

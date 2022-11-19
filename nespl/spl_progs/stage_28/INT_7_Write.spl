@@ -194,13 +194,13 @@ else
     // If Lseek equals file size, increment file size in the inode table entry and also in the memory copy of the root file.
     if(lSeek == [inodeTableEntryAddress+2]) then
 
-        [inodeTableEntryAddress+2] = lSeek+1;
-        [ROOT_FILE + inodeIndexOfFile*8+1] = lSeek + 1;
+        [inodeTableEntryAddress+2] = [inodeTableEntryAddress+2]+1;
+        [ROOT_FILE + inodeIndexOfFile*8+1] = [ROOT_FILE + inodeIndexOfFile*8+1] + 1;
 
     endif;
 
     // Increment the Lseek position in the Open File Table
-    [openFileTableEntry+2] = lSeek + 1;
+    [openFileTableEntry+2] = [openFileTableEntry+2] + 1;
 
     // Return 0.
     returnValue = 0;

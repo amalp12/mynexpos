@@ -19,7 +19,7 @@ if(functionNumber == ACQUIRE_KERN_LOCK) then
 
             // Set the state of current process to READY
             alias processTableEntryAddress R2;
-            processTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+6] * PT_ENTRY_SIZE);
+            processTableEntryAddress = PROCESS_TABLE + ([SYSTEM_STATUS_TABLE+6] * 16);
             [processTableEntryAddress+4] = READY;
 
             //  Call the switch_context() function of the Scheduler Module.
